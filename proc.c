@@ -270,7 +270,7 @@ exit(void)
 // Wait for a child process to exit and return its pid.
 // Return -1 if this process has no children.
 int
-wait(void)
+wait(int* status)
 {
   struct proc *p;
   int havekids, pid;
@@ -295,6 +295,13 @@ wait(void)
         p->name[0] = 0;
         p->killed = 0;
         p->state = UNUSED;
+
+	if(status){
+		 *status = p->exitstatus;
+	}
+
+	p->exitstatus = 0;
+	
         release(&ptable.lock);
         return pid;
       }
@@ -532,3 +539,93 @@ procdump(void)
     cprintf("\n");
   }
 }
+
+int
+newexitdef(int status)
+{
+  struct proc *curproc = myproc();
+  struct proc *p;
+  int fd;
+
+  if(curproc == initproc)
+    panic("init exiting");
+
+  for(fd = 0; fd < NOFILE; fd++){
+    if(curproc->ofile[fd]){
+      fileclose(curproc->ofile[fd]);
+      curproc->ofile[fd] = 0;
+    }
+  }
+
+  begin_op();
+  iput(curproc->cwd);
+  end_op();
+  curproc->cwd = 0;
+
+  acquire(&ptable.lock);
+  wakeup1(curproc->parent);
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->parent == curproc){
+      p->parent = initproc;
+      if(p->state == ZOMBIE)
+	wakeup1(initproc);
+    }
+  }
+
+  curproc->state = ZOMBIE;
+  curproc->exitstatus = status;
+  sched();
+  panic("zombie exit");
+
+}
+
+int
+waitpid(int pid, int* status, int options)
+{
+  struct proc *p;
+  struct proc *curproc = myproc();
+  int process;
+  acquire(&ptable.lock);
+
+  for(;;) {
+    process = 0;
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+	if(p->pid != pid) continue;
+
+	process = 1;
+        if(p->state == ZOMBIE) {
+		kfree(p->kstack);
+		p->kstack = 0;
+		freevm(p->pgdir);
+		p->pid = 0;
+		p->parent = 0;
+		p->name[0] = 0;
+		p->killed = 0;
+		p->state = UNUSED;
+	
+		if(status){
+			 *status = p->exitstatus;
+		}
+
+		p->exitstatus = 0;
+
+		release(&ptable.lock);
+		return pid;
+        } 
+	else if(options == 1) {
+		release(&ptable.lock);
+		return 0;
+	}
+     }
+     if(!process || curproc->killed) {
+        release(&ptable.lock);
+      	return -1;
+     }
+   sleep(curproc, &ptable.lock);
+  }
+}
+      
+		
+
+
+

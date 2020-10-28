@@ -1,4 +1,4 @@
-// Demonstrate that moving the "acquire" in iderw after the loop that
+
 // appends to the idequeue results in a race.
 
 // For this to work, you should also add a spin within iderw's
@@ -43,7 +43,7 @@ main(int argc, char *argv[])
     read(fd, data, sizeof(data));
   close(fd);
 
-  wait();
+  wait(0);
 
   exit();
 }
