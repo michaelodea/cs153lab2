@@ -26,6 +26,7 @@ int sleep(int);
 int uptime(void);
 int newexitdef(int); //Lab 1
 int waitpid(int, int*, int); //Lab 1
+int prioritySet(int); // Lab 2
 
 // ulib.c
 int stat(const char*, struct stat*);

@@ -123,6 +123,7 @@ void            wakeup(void*);
 void            yield(void);
 int		newexitdef(int); //Lab 1
 int 		waitpid(int, int*, int); //Lab 1
+int             prioritySet(int); // Lab 2
 
 // swtch.S
 void            swtch(struct context**, struct context*);

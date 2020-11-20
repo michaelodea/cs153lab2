@@ -111,7 +111,7 @@ found:
   p->context = (struct context*)sp;
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
-
+  p->prior = 10;
   return p;
 }
 
@@ -336,28 +336,34 @@ scheduler(void)
   for(;;){
     // Enable interrupts on this processor.
     sti();
+    struct proc *nextProcess = ptable.proc;
+    int lowP = 255;
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE)
+      if(p->state != RUNNABLE || p == nextProcess)
         continue;
+      if(p->prior < lowP) {
+ 	lowP = p->prior;
+	nextProcess = p;
+      }	
+    }
 
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
-      c->proc = p;
-      switchuvm(p);
-      p->state = RUNNING;
+      c->proc = nextProcess;
+      switchuvm(nextProcess);
+      nextProcess->state = RUNNING;
 
-      swtch(&(c->scheduler), p->context);
+      swtch(&(c->scheduler), nextProcess->context);
       switchkvm();
 
       // Process is done running for now.
       // It should have changed its p->state before coming back.
       c->proc = 0;
-    }
-    release(&ptable.lock);
+      release(&ptable.lock);
 
   }
 }
@@ -625,7 +631,11 @@ waitpid(int pid, int* status, int options)
   }
 }
       
-		
-
-
+int
+prioritySet(int x)
+{
+  struct proc *curr = myproc();
+  curr->prior = x;
+  return 0;
+}		
 

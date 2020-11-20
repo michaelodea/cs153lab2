@@ -22,3 +22,4 @@
 #define SYS_close  21
 #define SYS_newexitdef 22
 #define SYS_waitpid 23
+#define SYS_prioritySet 24

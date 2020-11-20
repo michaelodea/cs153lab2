@@ -121,4 +121,13 @@ sys_waitpid(void)
   return waitpid(pid, status, options);
 }
 
+int  // Lab 2
+sys_prioritySet(void)
+{
+  int prior;
+  if(argint(0, &prior) < 0){
+    	return -1;
+  }
+  return prioritySet(prior);
+}
 

@@ -31,4 +31,6 @@ SYSCALL(sleep)
 SYSCALL(uptime)
 SYSCALL(newexitdef)
 SYSCALL(waitpid)
+SYSCALL(prioritySet)
+
 
